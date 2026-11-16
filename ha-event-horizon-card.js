@@ -4,7 +4,7 @@
  *  - custom:family-timeline-card  – dagens tidslinje per person
  *  - custom:family-action-card    – det som är agerbart: stor nedräkning + stora förberedelse-ikoner
  */
-const FTC_VERSION = '0.19.0';
+const FTC_VERSION = '0.20.0';
 
 const TRAVEL_MODEL = { road_factor: 1.3, walk_kmh: 5, bike_kmh: 15, car_kmh: 40, car_extra: 5, max_walk: 15, max_bike: 15 };
 const BASE_DEFAULTS = {
@@ -369,6 +369,7 @@ class FamilyCalendarBase extends HTMLElement {
       notice_icon: rule.notice_icon || src.notice_icon || null,
       notice_until: rule.notice_until || src.notice_until || null,
       notice_days: pick(rule.notice_days, src.notice_days, null), // påminnelse N dagar i förväg (agera-kortet)
+      countdownYield: re(pick(rule.countdown_yield, src.countdown_yield, null)), // ingen nedräkning när en matchande aktivitet återstår samma dag
       suppress: rule._sup || null, // döljer andra påminnelser samma dag, t.ex. Idrottskläder när simning ersätter idrotten
     };
   }
@@ -431,6 +432,14 @@ class FamilyCalendarBase extends HTMLElement {
       }
     }
     rows.forEach((r) => r.items.sort((a, b) => a.start - b.start));
+    // countdown_yield: t.ex. schack räknas bara ner om ingen basket återstår samma dag
+    const now = new Date();
+    for (const r of rows) {
+      for (const it of r.items) {
+        if (!it.countdownYield || it.allDay) continue;
+        if (r.items.some((o) => o !== it && !o.allDay && o.countdown !== false && o.end > now && it.countdownYield.test(o.title))) it.countdown = false;
+      }
+    }
     return rows;
   }
 

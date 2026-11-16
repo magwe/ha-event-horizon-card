@@ -71,3 +71,13 @@ rules:
     notice_text: Badkläder
     suppress: ^Idrottskläder$
 ```
+
+### Prioritet mellan aktiviteter
+
+`countdown_yield` på en källa eller regel stänger av nedräkningen för aktiviteten när en annan aktivitet vars titel matchar mönstret återstår samma dag. Exempel: schack räknas bara ner de dagar då ingen basket återstår.
+
+```yaml
+- calendar: calendar.schack
+  label: Schack
+  countdown_yield: ^Basket
+```
