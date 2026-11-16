@@ -59,3 +59,15 @@ people:
 ```
 
 Regler, platser, restider och ikoner anges i kortets inställningar (`rules`, `places`, `travel_model` m.fl.) och ligger kvar i dashboarden, inte i den här filen.
+
+### Regel som ersätter en annan påminnelse
+
+`suppress` på en regel döljer andra påminnelser samma dag vars text matchar mönstret. Exempel: när klassens kalender har simning visas "Badkläder" i stället för "Idrottskläder" från schemats idrottslektion.
+
+```yaml
+rules:
+  - match: simning
+    icon: mdi:swim
+    notice_text: Badkläder
+    suppress: ^Idrottskläder$
+```

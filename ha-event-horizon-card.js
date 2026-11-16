@@ -4,7 +4,7 @@
  *  - custom:family-timeline-card  – dagens tidslinje per person
  *  - custom:family-action-card    – det som är agerbart: stor nedräkning + stora förberedelse-ikoner
  */
-const FTC_VERSION = '0.18.0';
+const FTC_VERSION = '0.19.0';
 
 const TRAVEL_MODEL = { road_factor: 1.3, walk_kmh: 5, bike_kmh: 15, car_kmh: 40, car_extra: 5, max_walk: 15, max_bike: 15 };
 const BASE_DEFAULTS = {
@@ -52,7 +52,7 @@ function fmtLeft(ms) {
   return r ? `om ${h} h ${r} min` : `om ${h} h`;
 }
 
-const compileRules = (list) => (list || []).map((r) => ({ ...r, _re: re(r.match) }));
+const compileRules = (list) => (list || []).map((r) => ({ ...r, _re: re(r.match), _sup: re(r.suppress) }));
 
 /*
  * Nedräkningsring mot aktivitetens starttid. Full ring = 60 min när högst 60 min återstår, annars 12 h (720 min).
@@ -369,6 +369,7 @@ class FamilyCalendarBase extends HTMLElement {
       notice_icon: rule.notice_icon || src.notice_icon || null,
       notice_until: rule.notice_until || src.notice_until || null,
       notice_days: pick(rule.notice_days, src.notice_days, null), // påminnelse N dagar i förväg (agera-kortet)
+      suppress: rule._sup || null, // döljer andra påminnelser samma dag, t.ex. Idrottskläder när simning ersätter idrotten
     };
   }
 
@@ -791,8 +792,10 @@ class FamilyActionCard extends FamilyCalendarBase {
       const time = it.allDay || parent ? null : it.start;
       add(it.notice_icon || it.icon, it.notice_text || it.title, it.color, isTomorrow, time, null, isTomorrow ? 2 : 1);
     };
+    const sups = { false: [], true: [] };
     const scan = (items, isTomorrow) => {
       for (const it of items) {
+        if (it.suppress) sups[isTomorrow].push(it.suppress);
         if (it.merged) {
           it.children.filter((ch) => !ch.hide).forEach((ch) => consider(ch, isTomorrow, it));
           if (it.late_start_after && it.firstOfDay) {
@@ -812,7 +815,8 @@ class FamilyActionCard extends FamilyCalendarBase {
           `${WD[it.start.getDay()]}${it.allDay ? '' : ' ' + hm(it.start)}`, 3);
       }
     }
-    return [...tiles.values()].sort((a, b) => (a.isTomorrow - b.isTomorrow) || ((a.time || 0) - (b.time || 0)) || (a.prio - b.prio));
+    return [...tiles.values()].filter((t) => !sups[t.isTomorrow].some((r) => r.test(t.text)))
+      .sort((a, b) => (a.isTomorrow - b.isTomorrow) || ((a.time || 0) - (b.time || 0)) || (a.prio - b.prio));
   }
 
   _render() {
